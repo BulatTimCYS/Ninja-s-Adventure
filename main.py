@@ -45,14 +45,38 @@ class Enemy:
         self.alive = alive
 
 
-class Lamp:
-    def __init__(self, x, y):
-        self.coordinates = (x, y)
+class Map:
+    def __int__(self):
+        pass
 
 
-class Block:
-    def __init__(self, x, y):
-        self.coordinates = (x, y)
+def map_change():
+    d = ["                ",
+         "                ",
+         "                ",
+         "                ",
+         "                ",
+         "                ",
+         "    /___________",
+         "_X_/__I_^_______",
+         "################"]
+    x = y = 0  # координаты
+    for row in d:  # вся строка
+        for col in row:  # каждый символ
+            if col == "#":
+                scr.blit(pygame.image.load('data/down.png'), (x, y))
+            elif col == "/":
+                scr.blit(pygame.image.load('data/stairs.png'), (x, y))
+            elif col == "X":
+                scr.blit(pygame.image.load('data/ninja.png'), (x, y))
+            elif col == "I":
+                scr.blit(pygame.image.load('data/enemy.png'), (x, y))
+            elif col == "^":
+                scr.blit(pygame.image.load('data/flashlight.png'), (x, y))
+            x += 80  # блоки платформы ставятся на ширине блоков
+        y += 80  # то же самое и с высотой
+        x = 0  # на каждой новой строчке начинаем с нуля
+
 
 
 scr.blit(pygame.image.load('data/background.png'), pygame.image.load('data/background.png').get_rect())
@@ -65,6 +89,7 @@ while running:
         # elif event.type == pygame.ARROWRIGHT:
         #     hero.get_click(event.pos)
     scr.blit(pygame.image.load('data/background.png'), pygame.image.load('data/background.png').get_rect())
+    map_change()
     pygame.display.flip()
 
 # TODO:
