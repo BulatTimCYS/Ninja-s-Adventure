@@ -1,4 +1,5 @@
 import pygame
+from pygame import *
 
 scr = pygame.display.set_mode((1280, 720))
 pygame.display.set_caption("Ninja's Adventure")
@@ -28,6 +29,76 @@ class Hero:
     #     if key ==
 
 
+# class Player(pygame.sprite.Sprite):
+#     def __init__(self, x, y):
+#         pygame.sprite.Sprite.__init__(self)
+#         self.xvel = 0  # скорость перемещения. 0 - стоять на месте
+#         self.startX = x  # Начальная позиция Х, пригодится когда будем переигрывать уровень
+#         self.startY = y
+#         self.image = pygame.Surface((80, 80))
+#         self.image.fill(pygame.Color("#FFFFFF"))
+#         self.rect = pygame.Rect(x, y, 80, 80)  # прямоугольный объект
+#
+#     def update(self, event):
+#         left = right = False
+#         if left:
+#             self.xvel = -5  # Лево = x- n
+#
+#         if right:
+#             self.xvel = 5  # Право = x + n
+#
+#         if not (left or right):  # стоим, когда нет указаний идти
+#             self.xvel = 0
+#
+#         self.rect.x += self.xvel  # переносим свои положение на xvel
+#         if event.type == pygame.KEYDOWN and event.key == pygame.K_LEFT:
+#             left = True
+#         if event.type == pygame.KEYDOWN and event.key == pygame.K_RIGHT:
+#             right = True
+#
+#         if event.type == pygame.KEYUP and event.key == pygame.K_RIGHT:
+#             right = False
+#         if event.type == pygame.KEYUP and event.key == pygame.K_LEFT:
+#             left = False
+#
+#     def draw(self, screen):  # Выводим себя на экран
+#         screen.blit(self.image, (self.rect.x, self.rect.y))
+class Player(sprite.Sprite):
+    def __init__(self, x, y):
+        sprite.Sprite.__init__(self)
+        self.xvel = 0  # скорость перемещения. 0 - стоять на месте
+        self.startX = x  # Начальная позиция Х, пригодится когда будем переигрывать уровень
+        self.startY = y
+        self.rect = Rect(x, y, 80, 80)  # прямоугольный объект
+        self.image = 0
+        self.state = pygame.image.load('data/ninja.png')
+        self.run = pygame.image.load('data/ninja_run.png')
+        self.runleft = pygame.image.load('data/ninja_run_left.png')
+
+    def update(self, left, right):
+        if left:
+            self.xvel = -7  # Лево = x- n
+            self.image = 2
+
+        if right:
+            self.xvel = 7  # Право = x + n
+            self.image = 1
+
+        if not (left or right):  # стоим, когда нет указаний идти
+            self.xvel = 0
+            self.image = 0
+
+        self.rect.x += self.xvel  # переносим свои положение на xvel
+
+    def draw(self, screen):  # Выводим себя на экран
+        if self.image == 0:
+            screen.blit(self.state, (self.rect.x, self.rect.y))
+        elif self.image == 1:
+            screen.blit(self.run, (self.rect.x, self.rect.y))
+        elif self.image == 2:
+            screen.blit(self.runleft, (self.rect.x, self.rect.y))
+
+
 class Enemy:
     def __init__(self, x, y, rad=10, radz=1, alive=True):
         self.coordinates = (x, y)
@@ -43,53 +114,87 @@ class Enemy:
         else:
             self.vnavigate = "not"
         self.alive = alive
+        self.image = pygame.image.load('data/enemy.png')
+
+    def draw(self, screen):
+        screen.blit(self.image, self.image.get_rect())
+
+
+class Lamp:
+    def __init__(self, x, y):
+        self.image = pygame.image.load('data/flashlight.png')
+        self.x = x
+        self.y = y
+    # scr.blit(, (x, y))
 
 
 class Map:
-    def __int__(self):
-        pass
+    def __init__(self):
+        self.d = []
+        self.num = 1
+        self.lastnum = 0
+        self.downwall = pygame.image.load('data/down.png')
+        self.stairs = pygame.image.load('data/stairs.png')
+        self.g = []
+        self.map_change()
+
+    def get_map(self, k):
+        self.d.clear()
+        f = open("data/" + str(k) + "_map")
+        for number, line in enumerate(f):
+            self.d.append(line.rstrip())
+        f.close()
+
+    def map_change(self):
+        if self.num != self.lastnum:
+            self.lastnum = self.num
+            self.get_map(self.num)
+        x = y = 0
+        for row in self.d:
+            for col in row:
+                if col == "#":
+                    scr.blit(self.downwall, (x, y))
+                elif col == "/":
+                    scr.blit(self.stairs, (x, y))
+                elif col == "X":
+                    global herox, heroy
+                    herox = x
+                    heroy = y
+                elif col == "I":
+                    pass
+                elif col == "^":
+                    pass
+                x += 80
+            y += 80
+            x = 0
 
 
-def map_change():
-    d = ["                ",
-         "                ",
-         "                ",
-         "                ",
-         "                ",
-         "                ",
-         "    /___________",
-         "_X_/__I_^_______",
-         "################"]
-    x = y = 0  # координаты
-    for row in d:  # вся строка
-        for col in row:  # каждый символ
-            if col == "#":
-                scr.blit(pygame.image.load('data/down.png'), (x, y))
-            elif col == "/":
-                scr.blit(pygame.image.load('data/stairs.png'), (x, y))
-            elif col == "X":
-                scr.blit(pygame.image.load('data/ninja.png'), (x, y))
-            elif col == "I":
-                scr.blit(pygame.image.load('data/enemy.png'), (x, y))
-            elif col == "^":
-                scr.blit(pygame.image.load('data/flashlight.png'), (x, y))
-            x += 80  # блоки платформы ставятся на ширине блоков
-        y += 80  # то же самое и с высотой
-        x = 0  # на каждой новой строчке начинаем с нуля
-
-
-
-scr.blit(pygame.image.load('data/background.png'), pygame.image.load('data/background.png').get_rect())
+bg = pygame.image.load('data/background.png')
 running = True
-hero = Hero(0, 0)
+herox, heroy = 0, 0
+map = Map()
+left = right = False  # по умолчанию — стоим
+timer = pygame.time.Clock()
+hero = Player(herox, heroy)
 while running:
+    timer.tick(60)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        # elif event.type == pygame.ARROWRIGHT:
-        #     hero.get_click(event.pos)
-    scr.blit(pygame.image.load('data/background.png'), pygame.image.load('data/background.png').get_rect())
-    map_change()
+        if event.type == KEYDOWN and event.key == K_LEFT:
+            left = True
+        if event.type == KEYDOWN and event.key == K_RIGHT:
+            right = True
+
+        if event.type == KEYUP and event.key == K_RIGHT:
+            right = False
+        if event.type == KEYUP and event.key == K_LEFT:
+            left = False
+    scr.blit(bg, bg.get_rect())
+    map.map_change()
+    # scr.fill(pygame.Color("#000000"))
+    hero.update(left, right)  # передвижение
+    hero.draw(scr)  # отображение
     pygame.display.flip()
 
 # TODO:
