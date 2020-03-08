@@ -1,5 +1,3 @@
-from time import sleep
-
 import pygame
 from pygame import *
 
@@ -8,14 +6,15 @@ WIN_HEIGHT = 720
 DISPLAY = (WIN_WIDTH, WIN_HEIGHT)
 screen = pygame.display.set_mode(DISPLAY)
 pygame.init()
+mouse.set_visible(False)
 
 
 class Wall(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((80, 79))
+        self.image = Surface((80, 80))
         self.image = image.load("data/wall.png")
-        self.rect = Rect(x, y, 80, 79)
+        self.rect = Rect(x, y, 80, 80)
 
 
 class Lamp(sprite.Sprite):
@@ -32,7 +31,7 @@ class SmallPlatform(sprite.Sprite):
         self.image = Surface((80, 3))
         self.x, self.y = x, y - 2
         self.image = image.load("data/floor.png")
-        self.rect = Rect(x, y - 2, 80, 3)
+        self.rect = Rect(x, y, 80, 1)
 
 
 def initWalls(smps, walls, height):
@@ -56,6 +55,14 @@ class ClearPlatform(sprite.Sprite):
         self.image = Surface((80, 80))
         self.image.fill(Color("#888888"))
         self.image.set_colorkey(Color("#888888"))
+        self.rect = Rect(x, y, 80, 80)
+
+
+class Colona(sprite.Sprite):
+    def __init__(self, x, y):
+        sprite.Sprite.__init__(self)
+        self.image = Surface((80, 80))
+        self.image = image.load("data/platform.png")
         self.rect = Rect(x, y, 80, 80)
 
 
@@ -93,15 +100,14 @@ class Player(sprite.Sprite):
         self.yvel = 0
         self.onGround = False
         self.image = Surface((67, 79))
-        self.rect = Rect(x, y, 67, 79)
+        self.rect = Rect(x - 6, y, 45, 79)
         self.last = True
 
     def update(self, left, right, up, platforms):
 
         if up:
             if self.onGround:
-                self.yvel = -11
-            # self.image = image.load("data/ninja_right.png")
+                self.yvel = -8
 
         if left:
             self.xvel = -10
@@ -176,7 +182,8 @@ def start_screen():
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if (event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]) or (event.type == pygame.QUIT) or (
+                    event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 raise SystemExit("QUIT")
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
@@ -186,7 +193,7 @@ def start_screen():
 
 
 def stop_screen():
-    sleep(1)
+    mixer.music.stop()
     intro_text = ["Конец игры", "",
                   "Esc, чтобы выйти из игры",
                   "R, чтобы сделать перезапуск игры"]
@@ -204,11 +211,12 @@ def stop_screen():
     clock = pygame.time.Clock()
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
+            if (event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]) or (event.type == pygame.QUIT) or (
+                    event.type == KEYDOWN and event.key == K_ESCAPE):
                 pygame.quit()
                 raise SystemExit("QUIT")
-            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return
+            elif event.type == pygame.KEYDOWN and event.key == K_r:
+                main()
         pygame.display.flip()
         clock.tick(60)
 
@@ -216,7 +224,6 @@ def stop_screen():
 def main():
     global hero
     pygame.display.set_caption("Ninja's Adventure")
-    bg = Surface((WIN_WIDTH, WIN_HEIGHT))
     bg = image.load("data/background.png")
     left = right = False
     up = down = False
@@ -234,15 +241,29 @@ def main():
 
     timer = pygame.time.Clock()
     x = y = 0
+    flag_walls = False
     for row in level:
         for col in row:
+            if col == "X":
+                hero = Player(x, y)
+                entities.add(hero)
+            if flag_walls:
+                wall = Wall(x, y)
+                entities.add(wall)
+            if col == "[":
+                flag_walls = True
+                colona = Colona(x, y)
+                platforms.append(colona)
+                entities.add(colona)
+            if col == "]":
+                flag_walls = False
+                colona = Colona(x, y)
+                platforms.append(colona)
+                entities.add(colona)
             if col == "#":
                 pf = Platform(x, y)
                 entities.add(pf)
                 platforms.append(pf)
-            if col == "X":
-                hero = Player(x, y)
-                entities.add(hero)
             if col == "0":
                 pf = ClearPlatform(x, y)
                 entities.add(pf)
@@ -262,32 +283,35 @@ def main():
     total_level_width = len(level[0]) * 80
     total_level_height = len(level) * 80
 
-    initWalls(smallplatforms, walls, total_level_height)
-
     camera = Camera(camera_configure, total_level_width, total_level_height)
     start_screen()
+    pygame.mixer.music.load('data\music.mp3')
+    pygame.mixer.music.play()
     while 1:
         timer.tick(60)
         for event in pygame.event.get():
+            if event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]:
+                pygame.quit()
+                raise SystemExit("QUIT")
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
                 stop_screen()
-            if event.type == KEYDOWN and event.key == K_UP:
+            if (event.type == KEYDOWN) and (event.key == K_UP or event.key == K_w):
                 up = True
-            if event.type == KEYDOWN and event.key == K_LEFT:
+            if (event.type == KEYDOWN) and (event.key == K_LEFT or event.key == K_a):
                 left = True
-            if event.type == KEYDOWN and event.key == K_RIGHT:
+            if (event.type == KEYDOWN) and (event.key == K_RIGHT or event.key == K_d):
                 right = True
             # if event.type == KEYDOWN and event.key == K_DOWN:
             #     down = True
             #
             # if event.type == KEYUP and event.key == K_DOWN:
             #     down = False
-            if event.type == KEYUP and event.key == K_UP:
+            if (event.type == KEYUP) and (event.key == K_UP or event.key == K_w):
                 up = False
-            if event.type == KEYUP and event.key == K_RIGHT:
-                right = False
-            if event.type == KEYUP and event.key == K_LEFT:
+            if (event.type == KEYUP) and (event.key == K_LEFT or event.key == K_a):
                 left = False
+            if (event.type == KEYUP) and (event.key == K_RIGHT or event.key == K_d):
+                right = False
 
         screen.blit(bg, (0, 0))
 
