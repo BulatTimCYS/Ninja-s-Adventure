@@ -9,26 +9,51 @@ pygame.init()
 mouse.set_visible(False)
 
 
-class Wall(sprite.Sprite):
+class Door(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((80, 80))
-        self.image = image.load("data/wall.png")
+        self.image = image.load("data\door.png")
+        self.rect = Rect(x + 37, y, 6, 80)
+
+
+class Stairs(sprite.Sprite):
+    def __init__(self, x, y):
+        sprite.Sprite.__init__(self)
+        self.image = image.load("data/stairs.png")
         self.rect = Rect(x, y, 80, 80)
+
+
+class Roof(sprite.Sprite):
+    def __init__(self, x, y, inverted=False):
+        sprite.Sprite.__init__(self)
+        if not inverted:
+            self.image = image.load("data/roof.png")
+        else:
+            self.image = image.load("data/roof_inverted.png")
+        self.rect = Rect(x, y, 80, 80)
+
+
+class Wall(sprite.Sprite):
+    def __init__(self, x, y, door=False):
+        sprite.Sprite.__init__(self)
+        if not door:
+            self.image = image.load("data/wall.png")
+            self.rect = Rect(x, y, 80, 80)
+        else:
+            self.image = image.load("data\doorwall.png")
+            self.rect = Rect(x + 37, y, 43, 80)
 
 
 class Lamp(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((80, 80))
         self.image = image.load("data/lamp.png")
-        self.rect = Rect(x, y, 80, 80)
+        self.rect = Rect(x, y, 80, 1)
 
 
 class SmallPlatform(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((80, 3))
         self.x, self.y = x, y - 2
         self.image = image.load("data/floor.png")
         self.rect = Rect(x, y, 80, 1)
@@ -44,7 +69,6 @@ def initWalls(smps, walls, height):
 class Platform(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = Surface((80, 80))
         self.image = image.load("data/platform.png")
         self.rect = Rect(x, y, 80, 80)
 
@@ -99,15 +123,16 @@ class Player(sprite.Sprite):
         self.startY = y
         self.yvel = 0
         self.onGround = False
+        self.onStairs = False
         self.image = Surface((67, 79))
         self.rect = Rect(x - 6, y, 45, 79)
         self.last = True
 
-    def update(self, left, right, up, platforms):
+    def update(self, left, right, up, down, platforms, stairs):
 
         if up:
-            if self.onGround:
-                self.yvel = -8
+            if self.onGround or self.onStairs:
+                self.yvel = -10
 
         if left:
             self.xvel = -10
@@ -133,10 +158,20 @@ class Player(sprite.Sprite):
                 else:
                     self.image = image.load("data/ninja_left.png")
 
-        if not self.onGround:
-            self.yvel += 0.4
+        if not self.onGround and (not self.onStairs and not down):
+            self.yvel += 0.6
 
         self.onGround = False
+        if sprite.spritecollide(self, stairs, False):
+            self.onStairs = True
+            if up:
+                self.yvel = -7
+            elif down:
+                self.yvel = 7
+            else:
+                self.yvel = 0
+        else:
+            self.onStairs = False
         self.rect.y += self.yvel
         self.collide(0, self.yvel, platforms)
 
@@ -231,6 +266,8 @@ def main():
     entities = pygame.sprite.Group()
     platforms = []
     smallplatforms = []
+    doors = sprite.Group()
+    stairs = pygame.sprite.Group()
     walls = pygame.sprite.Group()
 
     level = []
@@ -246,10 +283,16 @@ def main():
         for col in row:
             if col == "X":
                 hero = Player(x, y)
-                entities.add(hero)
             if flag_walls:
                 wall = Wall(x, y)
                 entities.add(wall)
+            if col == "-":
+                flag_walls = True
+                doorwall = Wall(x, y, door=True)
+                entities.add(doorwall)
+                door = Door(x, y)
+                doors.add(door)
+                entities.add(door)
             if col == "[":
                 flag_walls = True
                 colona = Colona(x, y)
@@ -260,6 +303,14 @@ def main():
                 colona = Colona(x, y)
                 platforms.append(colona)
                 entities.add(colona)
+            if col == "/":
+                roof = Roof(x, y)
+                platforms.append(roof)
+                entities.add(roof)
+            if col == "\\":
+                roof = Roof(x, y, inverted=True)
+                platforms.append(roof)
+                entities.add(roof)
             if col == "#":
                 pf = Platform(x, y)
                 entities.add(pf)
@@ -270,12 +321,18 @@ def main():
                 platforms.append(pf)
             if col == "^":
                 lamp = Lamp(x, y)
+                smallplatforms.append(lamp)
+                platforms.append(lamp)
                 entities.add(lamp)
             if col == "_":
                 smp = SmallPlatform(x, y)
                 smallplatforms.append(smp)
                 platforms.append(smp)
                 entities.add(smp)
+            if col == "|":
+                stair = Stairs(x, y)
+                stairs.add(stair)
+                entities.add(stair)
             x += 80
         y += 80
         x = 0
@@ -301,11 +358,11 @@ def main():
                 left = True
             if (event.type == KEYDOWN) and (event.key == K_RIGHT or event.key == K_d):
                 right = True
-            # if event.type == KEYDOWN and event.key == K_DOWN:
-            #     down = True
-            #
-            # if event.type == KEYUP and event.key == K_DOWN:
-            #     down = False
+            if event.type == KEYDOWN and event.key == K_DOWN:
+                down = True
+
+            if event.type == KEYUP and event.key == K_DOWN:
+                down = False
             if (event.type == KEYUP) and (event.key == K_UP or event.key == K_w):
                 up = False
             if (event.type == KEYUP) and (event.key == K_LEFT or event.key == K_a):
@@ -318,10 +375,11 @@ def main():
         camera.update(hero)
         for wall in walls:
             screen.blit(wall.image, camera.apply(wall))
-        hero.update(left, right, up, platforms)
+        hero.update(left, right, up, down, platforms, stairs)
+        
         for event in entities:
             screen.blit(event.image, camera.apply(event))
-
+        screen.blit(hero.image, camera.apply(hero))
         pygame.display.update()
 
 
