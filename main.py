@@ -142,7 +142,6 @@ class Player(sprite.Sprite):
         self.lastAction = False
 
     def update(self, left, right, up, down, action, platforms, stairs, enemies, targets):
-
         if up:
             if self.onGround or self.onStairs:
                 self.yvel = -10
@@ -213,26 +212,25 @@ class Player(sprite.Sprite):
         for e in enemies:
             if not e.death:
                 if e.inverted:
-                    if e.rect.x + 40 <= self.rect.x <= e.rect.x + 130 and (
+                    if e.rect.x + 20 <= self.rect.x <= e.rect.x + 120 and (
                             e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and action:
                         e.death = True
                         e.image = image.load("data/inverted_dead_enemy.png")
-                    if (0 < e.rect.x - self.rect.x <= 150 or 0 >= e.rect.x - self.rect.x >= -40) and (
-                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and not e.death:
+                    if (e.rect.x - 320 < self.rect.x < e.rect.x + 20 or e.rect.x < self.rect.x < e.rect.x + 20) and (
+                            e.rect.y < self.rect.y + 60 < e.rect.y + 79 or e.rect.y < self.rect.y < e.rect.y + 60) and not e.death:
                         stop_screen()
                 else:
-                    if e.rect.x - 50 <= self.rect.x + 80 <= e.rect.x + 40 and (
+                    if e.rect.x - 100 <= self.rect.x + 80 <= e.rect.x + 60 and (
                             e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and action:
                         e.death = True
                         e.image = image.load("data/dead_enemy.png")
-                    if (0 < self.rect.x - e.rect.x <= 150 or 0 >= self.rect.x - e.rect.x >= -40) and (
-                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and not e.death:
+                    if (e.rect.x + 60 < self.rect.x < e.rect.x + 380 or e.rect.x + 60 < self.rect.x + 80 < e.rect.x + 80) and (
+                            e.rect.y < self.rect.y + 60 < e.rect.y + 79 or e.rect.y < self.rect.y < e.rect.y + 60) and not e.death:
                         stop_screen()
         for t in targets:
             if not t.death:
-                if (
-                        t.rect.x - 50 < self.rect.x + 80 < t.rect.x + 80 or t.rect.x + 130 > self.rect.x > t.rect.x) and (
-                        t.rect.y <= self.rect.y + 79 <= t.rect.y or t.rect.y <= self.rect.y <= t.rect.y + 79) and action:
+                if (t.rect.x - 50 < self.rect.x + 80 < t.rect.x + 80 or t.rect.x + 130 > self.rect.x > t.rect.x) and (
+                        t.rect.y < self.rect.y + 60 < t.rect.y + 79 or t.rect.y < self.rect.y < t.rect.y + 60) and action:
                     t.death = True
                     t.image = image.load("data/dead_target.png")
         targets_alive(targets)
@@ -257,9 +255,12 @@ class Target(sprite.Sprite):
 
 def start_screen():
     intro_text = ["Ninja's Adventure", "",
+                  "Твоя задача - помочь ниндзе",
+                  "в последнем задании - вытащить из плена мальчика", "", ""
                   "Управление",
                   "W - Прыгнуть. A, D - Влево и вправо",
-                  "S - Вниз по лестнице, E или пробел - убийство",
+                  "S - Вниз по лестнице, E или пробел - действие",
+                  "Также можно использовать стрелочки",
                   "Esc, чтобы выйти"]
     screen.fill(Color("#227777"))
     font = pygame.font.Font(None, 30)
@@ -280,7 +281,7 @@ def start_screen():
                 pygame.quit()
                 raise SystemExit("QUIT")
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+                return
         pygame.display.flip()
         clock.tick(60)
 
@@ -311,7 +312,6 @@ def pause_screen():
                 mixer.music.unpause()
                 return
             elif event.type == pygame.KEYDOWN and event.key == K_r:
-                pygame.quit()
                 main()
             elif (event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]) or (event.type == pygame.QUIT):
                 pygame.quit()
@@ -322,7 +322,7 @@ def pause_screen():
 
 def stop_screen():
     mixer.music.stop()
-    intro_text = ["Конец игры", "",
+    intro_text = ["Ты не справился с заданием...", "",
                   "Esc, чтобы выйти из игры",
                   "R, чтобы сделать перезапуск игры"]
     screen.fill(Color("#772222"))
