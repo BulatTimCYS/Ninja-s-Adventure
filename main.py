@@ -264,13 +264,13 @@ def start_screen():
                   "Esc, чтобы выйти"]
     screen.fill(Color("#227777"))
     font = pygame.font.Font(None, 30)
-    text_coord = 300
+    text_coord = 200
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 500
+        intro_rect.x = 300
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     clock = pygame.time.Clock()
@@ -294,13 +294,13 @@ def pause_screen():
                   "R, чтобы сделать перезапуск игры"]
     screen.fill(Color("#777722"))
     font = pygame.font.Font(None, 30)
-    text_coord = 300
+    text_coord = 200
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 500
+        intro_rect.x = 300
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     clock = pygame.time.Clock()
@@ -327,13 +327,13 @@ def stop_screen():
                   "R, чтобы сделать перезапуск игры"]
     screen.fill(Color("#772222"))
     font = pygame.font.Font(None, 30)
-    text_coord = 300
+    text_coord = 200
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 500
+        intro_rect.x = 300
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     clock = pygame.time.Clock()
@@ -356,13 +356,13 @@ def win_screen():
                   "R, чтобы сделать перезапуск игры"]
     screen.fill(Color("#579232"))
     font = pygame.font.Font(None, 30)
-    text_coord = 300
+    text_coord = 200
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
         text_coord += 10
         intro_rect.top = text_coord
-        intro_rect.x = 500
+        intro_rect.x = 300
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
     clock = pygame.time.Clock()
