@@ -232,7 +232,7 @@ class Player(sprite.Sprite):
                 if (t.rect.x - 50 < self.rect.x + 80 < t.rect.x + 80 or t.rect.x + 130 > self.rect.x > t.rect.x) and (
                         t.rect.y < self.rect.y + 60 < t.rect.y + 79 or t.rect.y < self.rect.y < t.rect.y + 60) and action:
                     t.death = True
-                    t.image = image.load("data/dead_target.png")
+                    # t.image = image.load("data/dead_target.png")
         targets_alive(targets)
 
 
