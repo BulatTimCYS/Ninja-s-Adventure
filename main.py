@@ -12,7 +12,7 @@ mouse.set_visible(False)
 class Door(sprite.Sprite):
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
-        self.image = image.load("data\door.png")
+        self.image = image.load("data/door.png")
         self.rect = Rect(x + 37, y, 6, 80)
 
 
@@ -40,7 +40,7 @@ class Wall(sprite.Sprite):
             self.image = image.load("data/wall.png")
             self.rect = Rect(x, y, 80, 80)
         else:
-            self.image = image.load("data\doorwall.png")
+            self.image = image.load("data/doorwall.png")
             self.rect = Rect(x + 37, y, 43, 80)
 
 
@@ -107,12 +107,24 @@ def camera_configure(camera, target_rect):
     _, _, w, h = camera
     l, t = -l + WIN_WIDTH / 2, -t + WIN_HEIGHT / 2
 
-    l = min(0, l)  # Не движемся дальше левой границы
-    l = max(-(camera.width - WIN_WIDTH), l)  # Не движемся дальше правой границы
-    t = max(-(camera.height - WIN_HEIGHT), t)  # Не движемся дальше нижней границы
-    t = min(0, t)  # Не движемся дальше верхней границы
+    l = min(0, l)
+    l = max(-(camera.width - WIN_WIDTH), l)
+    t = max(-(camera.height - WIN_HEIGHT), t)
+    t = min(0, t)
 
     return Rect(l, t, w, h)
+
+
+class Enemy(sprite.Sprite):
+    def __init__(self, x, y, inverted=False):
+        sprite.Sprite.__init__(self)
+        self.inverted = inverted
+        if not inverted:
+            self.image = image.load("data/enemy.png")
+        else:
+            self.image = image.load("data/inverted_enemy.png")
+        self.rect = Rect(x, y, 80, 79)
+        self.death = False
 
 
 class Player(sprite.Sprite):
@@ -127,8 +139,9 @@ class Player(sprite.Sprite):
         self.image = Surface((67, 79))
         self.rect = Rect(x - 6, y, 45, 79)
         self.last = True
+        self.lastAction = False
 
-    def update(self, left, right, up, down, platforms, stairs):
+    def update(self, left, right, up, down, action, platforms, stairs, enemies, targets):
 
         if up:
             if self.onGround or self.onStairs:
@@ -158,7 +171,7 @@ class Player(sprite.Sprite):
                 else:
                     self.image = image.load("data/ninja_left.png")
 
-        if not self.onGround and (not self.onStairs and not down):
+        if not self.onGround:
             self.yvel += 0.6
 
         self.onGround = False
@@ -173,14 +186,14 @@ class Player(sprite.Sprite):
         else:
             self.onStairs = False
         self.rect.y += self.yvel
-        self.collide(0, self.yvel, platforms)
+        self.collide(0, self.yvel, platforms, enemies, action, targets)
 
         self.rect.x += self.xvel
-        self.collide(self.xvel, 0, platforms)
+        self.collide(self.xvel, 0, platforms, enemies, action, targets)
 
-    def collide(self, xvel, yvel, platforms):
+    def collide(self, xvel, yvel, platforms, enemies, action, targets):
         for p in platforms:
-            if sprite.collide_rect(self, p):  # если есть пересечение платформы с игроком
+            if sprite.collide_rect(self, p):
 
                 if xvel > 0:
                     self.rect.right = p.rect.left
@@ -197,13 +210,58 @@ class Player(sprite.Sprite):
                     self.rect.top = p.rect.bottom
                     self.yvel = 0
 
+        for e in enemies:
+            if not e.death:
+                if e.inverted:
+                    if e.rect.x + 40 <= self.rect.x <= e.rect.x + 130 and (
+                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and action:
+                        e.death = True
+                        e.image = image.load("data/inverted_dead_enemy.png")
+                    if (0 < e.rect.x - self.rect.x <= 150 or 0 >= e.rect.x - self.rect.x >= -40) and (
+                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and not e.death:
+                        stop_screen()
+                else:
+                    if e.rect.x - 50 <= self.rect.x + 80 <= e.rect.x + 40 and (
+                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and action:
+                        e.death = True
+                        e.image = image.load("data/dead_enemy.png")
+                    if (0 < self.rect.x - e.rect.x <= 150 or 0 >= self.rect.x - e.rect.x >= -40) and (
+                            e.rect.y <= self.rect.y + 79 <= e.rect.y or e.rect.y <= self.rect.y <= e.rect.y + 79) and not e.death:
+                        stop_screen()
+        for t in targets:
+            if not t.death:
+                if (
+                        t.rect.x - 50 < self.rect.x + 80 < t.rect.x + 80 or t.rect.x + 130 > self.rect.x > t.rect.x) and (
+                        t.rect.y <= self.rect.y + 79 <= t.rect.y or t.rect.y <= self.rect.y <= t.rect.y + 79) and action:
+                    t.death = True
+                    t.image = image.load("data/dead_target.png")
+        targets_alive(targets)
+
+
+def targets_alive(targets):
+    dcount = 0
+    for t in targets:
+        if t.death:
+            dcount += 1
+    if dcount == len(targets):
+        win_screen()
+
+
+class Target(sprite.Sprite):
+    def __init__(self, x, y):
+        sprite.Sprite.__init__(self)
+        self.image = image.load("data/target.png")
+        self.rect = Rect(x, y, 80, 80)
+        self.death = False
+
 
 def start_screen():
     intro_text = ["Ninja's Adventure", "",
                   "Управление",
                   "W - Прыгнуть. A, D - Влево и вправо",
+                  "S - Вниз по лестнице, E или пробел - убийство",
                   "Esc, чтобы выйти"]
-    screen.fill(Color("#777722"))
+    screen.fill(Color("#227777"))
     font = pygame.font.Font(None, 30)
     text_coord = 300
     for line in intro_text:
@@ -223,6 +281,41 @@ def start_screen():
                 raise SystemExit("QUIT")
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                 return  # начинаем игру
+        pygame.display.flip()
+        clock.tick(60)
+
+
+def pause_screen():
+    mixer.music.pause()
+    intro_text = ["Пауза", "",
+                  "Esc, чтобы вернуться",
+                  "Alt+F4, чтобы выйти из игры",
+                  "R, чтобы сделать перезапуск игры"]
+    screen.fill(Color("#777722"))
+    font = pygame.font.Font(None, 30)
+    text_coord = 300
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 500
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    clock = pygame.time.Clock()
+    while True:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN and event.key == K_ESCAPE:
+                global left, right, up, down, action
+                left = right = up = down = action = False
+                mixer.music.unpause()
+                return
+            elif event.type == pygame.KEYDOWN and event.key == K_r:
+                pygame.quit()
+                main()
+            elif (event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]) or (event.type == pygame.QUIT):
+                pygame.quit()
+                raise SystemExit("quit")
         pygame.display.flip()
         clock.tick(60)
 
@@ -256,19 +349,51 @@ def stop_screen():
         clock.tick(60)
 
 
+def win_screen():
+    mixer.music.stop()
+    intro_text = ["Вы завершили последенее задание ниндзи", "",
+                  "Esc, чтобы выйти из игры",
+                  "R, чтобы сделать перезапуск игры"]
+    screen.fill(Color("#579232"))
+    font = pygame.font.Font(None, 30)
+    text_coord = 300
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 500
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+    clock = pygame.time.Clock()
+    while True:
+        for event in pygame.event.get():
+            if (event.type == KEYDOWN and event.key in [K_F4, KMOD_ALT]) or (event.type == pygame.QUIT) or (
+                    event.type == KEYDOWN and event.key == K_ESCAPE):
+                pygame.quit()
+                raise SystemExit("QUIT")
+            elif event.type == pygame.KEYDOWN and event.key == K_r:
+                main()
+        pygame.display.flip()
+        clock.tick(60)
+
+
 def main():
-    global hero
+    global hero, left, up, right, down, action
     pygame.display.set_caption("Ninja's Adventure")
     bg = image.load("data/background.png")
     left = right = False
     up = down = False
+    action = False
 
     entities = pygame.sprite.Group()
     platforms = []
     smallplatforms = []
+    enemies = sprite.Group()
     doors = sprite.Group()
     stairs = pygame.sprite.Group()
     walls = pygame.sprite.Group()
+    targets = pygame.sprite.Group()
 
     level = []
     f = open("data/map")
@@ -333,6 +458,15 @@ def main():
                 stair = Stairs(x, y)
                 stairs.add(stair)
                 entities.add(stair)
+            if col == ">":
+                enemy = Enemy(x, y)
+                enemies.add(enemy)
+            if col == "<":
+                enemy = Enemy(x, y, inverted=True)
+                enemies.add(enemy)
+            if col == "x":
+                target = Target(x, y)
+                targets.add(target)
             x += 80
         y += 80
         x = 0
@@ -343,6 +477,7 @@ def main():
     camera = Camera(camera_configure, total_level_width, total_level_height)
     start_screen()
     pygame.mixer.music.load('data\music.mp3')
+    mixer.music.set_volume(0.3)
     pygame.mixer.music.play()
     while 1:
         timer.tick(60)
@@ -351,17 +486,21 @@ def main():
                 pygame.quit()
                 raise SystemExit("QUIT")
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-                stop_screen()
+                pause_screen()
             if (event.type == KEYDOWN) and (event.key == K_UP or event.key == K_w):
                 up = True
             if (event.type == KEYDOWN) and (event.key == K_LEFT or event.key == K_a):
                 left = True
             if (event.type == KEYDOWN) and (event.key == K_RIGHT or event.key == K_d):
                 right = True
-            if event.type == KEYDOWN and event.key == K_DOWN:
+            if event.type == KEYDOWN and (event.key == K_DOWN or event.key == K_s):
                 down = True
+            if event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_e):
+                action = True
 
-            if event.type == KEYUP and event.key == K_DOWN:
+            if event.type == KEYUP and (event.key == K_SPACE or event.key == K_e):
+                action = False
+            if event.type == KEYUP and (event.key == K_DOWN or event.key == K_s):
                 down = False
             if (event.type == KEYUP) and (event.key == K_UP or event.key == K_w):
                 up = False
@@ -375,11 +514,16 @@ def main():
         camera.update(hero)
         for wall in walls:
             screen.blit(wall.image, camera.apply(wall))
-        hero.update(left, right, up, down, platforms, stairs)
-        
-        for event in entities:
-            screen.blit(event.image, camera.apply(event))
+        hero.update(left, right, up, down, action, platforms, stairs, enemies, targets)
+        for item in entities:
+            screen.blit(item.image, camera.apply(item))
         screen.blit(hero.image, camera.apply(hero))
+        for e in enemies:
+            screen.blit(e.image, camera.apply(e))
+        for d in doors:
+            screen.blit(d.image, camera.apply(d))
+        for t in targets:
+            screen.blit(t.image, camera.apply(t))
         pygame.display.update()
 
 
