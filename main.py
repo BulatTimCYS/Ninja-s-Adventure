@@ -261,10 +261,11 @@ def start_screen():
                   "W - Прыгнуть. A, D - Влево и вправо",
                   "S - Вниз по лестнице, E или пробел - действие",
                   "Также можно использовать стрелочки",
-                  "Esc, чтобы выйти"]
+                  "Esc, чтобы выйти",
+                  "","Нажми на любую кнопку, чтобы начать."]
     screen.fill(Color("#227777"))
     font = pygame.font.Font(None, 30)
-    text_coord = 200
+    text_coord = 150
     for line in intro_text:
         string_rendered = font.render(line, 1, pygame.Color('black'))
         intro_rect = string_rendered.get_rect()
